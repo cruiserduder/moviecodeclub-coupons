@@ -2,46 +2,26 @@
   {
     "code": "WELCOME10",
     "deal": "10% off first order",
-    "notes": "New accounts only"
+    "notes": "Still valid for new users"
   },
   {
-    "code": "MCC-SUMMER5",
-    "deal": "$5 off $35+",
-    "notes": "Expires July 15, 2025"
+    "code": "MOVIEJULY5",
+    "deal": "$5 off $30+",
+    "notes": "July 2025 update"
   },
   {
-    "code": "BULK20",
-    "deal": "20% off 5+ titles",
-    "notes": "Valid on any combination"
+    "code": "SUMMERSTACK",
+    "deal": "Stack 2+ codes for 20% off",
+    "notes": "New summer stack combo"
   },
   {
-    "code": "APPONLY",
-    "deal": "6% off in app",
-    "notes": "Only valid in iOS/Android app"
+    "code": "FLASHDEAL",
+    "deal": "15% off today only",
+    "notes": "Auto-updated daily"
   },
   {
-    "code": "MOVIEJUNE25",
-    "deal": "25% off 2+ titles",
-    "notes": "June 2025 special"
-  },
-  {
-    "code": "STACK10",
-    "deal": "Extra 10% off bundles",
-    "notes": "Can apply to 3-for-$12 deals"
-  },
-  {
-    "code": "TWITTERFAM",
-    "deal": "15% off sitewide",
-    "notes": "Found on their Twitter"
-  },
-  {
-    "code": "MCC2025VIP",
-    "deal": "$7 off $40+",
-    "notes": "Works with account login"
-  },
-  {
-    "code": "CODEHUNT",
-    "deal": "10\u201330% off",
-    "notes": "Random at checkout"
+    "code": "VIPMOVIE25",
+    "deal": "25% off VIP members",
+    "notes": "Requires login"
   }
 ]
