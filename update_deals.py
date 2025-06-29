@@ -14,7 +14,11 @@ headers = {
     "User-Agent": "Mozilla/5.0"
 }
 
-all_deals = []
+# Hold all scraped data by format
+all_deals = {
+    "4K UHD": [],
+    "HD": []
+}
 
 # Loop through each collection
 for format_label, base_url in collection_urls.items():
@@ -39,14 +43,13 @@ for format_label, base_url in collection_urls.items():
             if not title_tag or not price_tag:
                 continue
 
-            # Clean title
             title = title_tag.text.strip()
 
             # Extract current price
             current_price_match = re.search(r"\$[\d\.]+", price_tag.text)
             current_price = current_price_match.group(0) if current_price_match else "$0.00"
 
-            # Extract original price (if different)
+            # Extract original price if available
             if compare_tag:
                 compare_match = re.search(r"\$[\d\.]+", compare_tag.text)
                 if compare_match and compare_match.group(0) != current_price:
@@ -56,7 +59,7 @@ for format_label, base_url in collection_urls.items():
             else:
                 original_price = ""
 
-            # Discount calculation
+            # Calculate discount
             try:
                 if original_price:
                     cur = float(current_price.replace("$", ""))
@@ -67,11 +70,11 @@ for format_label, base_url in collection_urls.items():
             except:
                 discount_pct = ""
 
-            # Product link
+            # Build product link
             link_tag = product.find("a", href=True)
             product_link = "https://moviecodeclub.com" + link_tag["href"] if link_tag else base_url
 
-            # Add to list
+            # Build final deal entry
             deal = {
                 "title": title,
                 "price": current_price,
@@ -82,12 +85,20 @@ for format_label, base_url in collection_urls.items():
                 "added": datetime.utcnow().strftime("%Y-%m-%d")
             }
 
-            all_deals.append(deal)
+            all_deals[format_label].append(deal)
 
-        page += 1  # Go to next page
+        page += 1
 
-# Save to JSON
-with open("deals.json", "w") as f:
-    json.dump(all_deals, f, indent=2)
+# Sort: newest deals first
+all_deals["4K UHD"].reverse()
+all_deals["HD"].reverse()
 
-print(f"✅ {len(all_deals)} total deals saved to deals.json")
+# Save files
+with open("deals_4k.json", "w") as f:
+    json.dump(all_deals["4K UHD"], f, indent=2)
+
+with open("deals_hd.json", "w") as f:
+    json.dump(all_deals["HD"], f, indent=2)
+
+print(f"✅ Saved {len(all_deals['4K UHD'])} 4K deals → deals_4k.json")
+print(f"✅ Saved {len(all_deals['HD'])} HD deals → deals_hd.json")
