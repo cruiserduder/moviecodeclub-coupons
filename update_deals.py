@@ -2,8 +2,9 @@ import requests
 from bs4 import BeautifulSoup
 import json
 from datetime import datetime
+import re
 
-# URLs to scrape
+# Collection URLs
 collection_urls = {
     "4K UHD": "https://moviecodeclub.com/collections/4k-codes",
     "HD": "https://moviecodeclub.com/collections/hd-codes"
@@ -21,7 +22,6 @@ for format_label, url in collection_urls.items():
     response = requests.get(url, headers=headers)
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # Product cards vary across Shopify themes, may need adjusting
     products = soup.select(".product-card, .grid__item")
 
     for product in products:
@@ -29,19 +29,34 @@ for format_label, url in collection_urls.items():
         price_tag = product.select_one(".price-item--sale, .price-item--regular")
         compare_tag = product.select_one(".price-item--regular")
 
-        if compare_tag:
-    raw_compare = compare_tag.text.strip().replace("\u00a0", " ")
-    if raw_compare != current_price:
-        original_price = raw_compare
-    else:
-        original_price = ""
-else:
-    original_price = ""
+        if not title_tag or not price_tag:
+            continue
 
+        title = title_tag.text.strip()
+
+        # Extract current price (regex to remove junk like "Sale price")
+        current_price_match = re.search(r"\$[\d\.]+", price_tag.text)
+        current_price = current_price_match.group(0) if current_price_match else "$0.00"
+
+        # Extract original price only if different and available
+        if compare_tag:
+            compare_text = compare_tag.text.strip()
+            compare_match = re.search(r"\$[\d\.]+", compare_text)
+            if compare_match and compare_match.group(0) != current_price:
+                original_price = compare_match.group(0)
+            else:
+                original_price = ""
+        else:
+            original_price = ""
+
+        # Calculate discount
         try:
-            cur = float(current_price.replace("$", ""))
-            orig = float(original_price.replace("$", ""))
-            discount_pct = f"{round((1 - cur / orig) * 100)}% off" if cur < orig else ""
+            if original_price:
+                cur = float(current_price.replace("$", ""))
+                orig = float(original_price.replace("$", ""))
+                discount_pct = f"{round((1 - cur / orig) * 100)}% off" if cur < orig else ""
+            else:
+                discount_pct = ""
         except:
             discount_pct = ""
 
@@ -60,7 +75,7 @@ else:
 
         all_deals.append(deal)
 
-# Save to deals.json
+# Save to JSON
 with open("deals.json", "w") as f:
     json.dump(all_deals, f, indent=2)
 
