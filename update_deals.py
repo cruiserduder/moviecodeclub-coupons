@@ -4,96 +4,128 @@ import json
 from datetime import datetime
 import re
 
-# Collection URLs
-collection_urls = {
-    "4K UHD": "https://moviecodeclub.com/collections/4k-codes",
-    "HD": "https://moviecodeclub.com/collections/hd-codes"
-}
-
 headers = {
     "User-Agent": "Mozilla/5.0"
 }
 
-# Hold all scraped data by format
 all_deals = {
     "4K UHD": [],
     "HD": []
 }
 
-# Loop through each collection
-for format_label, base_url in collection_urls.items():
-    page = 1
-    while True:
-        paged_url = f"{base_url}?page={page}"
-        print(f"Scraping {format_label} page {page}...")
+# ---------- 4K UHD Scraping (Multi-Page) ----------
+format_label = "4K UHD"
+base_url = "https://moviecodeclub.com/collections/4k-codes"
+page = 1
 
-        response = requests.get(paged_url, headers=headers)
-        soup = BeautifulSoup(response.text, "html.parser")
+while True:
+    paged_url = f"{base_url}?page={page}"
+    print(f"Scraping {format_label} page {page}...")
+    response = requests.get(paged_url, headers=headers)
+    soup = BeautifulSoup(response.text, "html.parser")
 
-        products = soup.select("li.grid__item")
-        if not products:
-            print(f"No more products on page {page} — stopping.")
-            break
+    products = soup.select("li.grid__item")
+    if not products:
+        break
 
-        for product in products:
-            title_tag = product.select_one(".card__heading")
-            price_tag = product.select_one(".price-item--sale") or product.select_one(".price-item--regular")
-            compare_tag = product.select_one(".price-item--regular")
+    for product in products:
+        title_tag = product.select_one(".card__heading")
+        price_tag = product.select_one(".price-item--sale") or product.select_one(".price-item--regular")
+        compare_tag = product.select_one(".price-item--regular")
+        if not title_tag or not price_tag:
+            continue
 
-            if not title_tag or not price_tag:
-                continue
+        title = title_tag.text.strip()
+        current_price = re.search(r"\$[\d\.]+", price_tag.text)
+        current_price = current_price.group(0) if current_price else "$0.00"
 
-            title = title_tag.text.strip()
+        original_price = ""
+        if compare_tag:
+            compare = re.search(r"\$[\d\.]+", compare_tag.text)
+            if compare and compare.group(0) != current_price:
+                original_price = compare.group(0)
 
-            # Extract current price
-            current_price_match = re.search(r"\$[\d\.]+", price_tag.text)
-            current_price = current_price_match.group(0) if current_price_match else "$0.00"
-
-            # Extract original price if available
-            if compare_tag:
-                compare_match = re.search(r"\$[\d\.]+", compare_tag.text)
-                if compare_match and compare_match.group(0) != current_price:
-                    original_price = compare_match.group(0)
-                else:
-                    original_price = ""
+        # Discount %
+        try:
+            if original_price:
+                cur = float(current_price.replace("$", ""))
+                orig = float(original_price.replace("$", ""))
+                discount = f"{round((1 - cur / orig) * 100)}% off" if cur < orig else ""
             else:
-                original_price = ""
+                discount = ""
+        except:
+            discount = ""
 
-            # Calculate discount
-            try:
-                if original_price:
-                    cur = float(current_price.replace("$", ""))
-                    orig = float(original_price.replace("$", ""))
-                    discount_pct = f"{round((1 - cur / orig) * 100)}% off" if cur < orig else ""
-                else:
-                    discount_pct = ""
-            except:
-                discount_pct = ""
+        link_tag = product.find("a", href=True)
+        link = "https://moviecodeclub.com" + link_tag["href"] if link_tag else base_url
 
-            # Build product link
-            link_tag = product.find("a", href=True)
-            product_link = "https://moviecodeclub.com" + link_tag["href"] if link_tag else base_url
+        all_deals[format_label].append({
+            "title": title,
+            "price": current_price,
+            "original_price": original_price,
+            "discount": discount,
+            "link": link,
+            "format": format_label,
+            "added": datetime.utcnow().strftime("%Y-%m-%d")
+        })
 
-            # Build final deal entry
-            deal = {
-                "title": title,
-                "price": current_price,
-                "original_price": original_price,
-                "discount": discount_pct,
-                "link": product_link,
-                "format": format_label,
-                "added": datetime.utcnow().strftime("%Y-%m-%d")
-            }
+    page += 1
 
-            all_deals[format_label].append(deal)
-
-        page += 1
-
-# Sort: newest deals first
+# Reverse to get newest → oldest
 all_deals["4K UHD"].reverse()
+
+# ---------- HD Scraping (Page 1 Only) ----------
+format_label = "HD"
+url = "https://moviecodeclub.com/collections/hd-codes-1"
+print(f"Scraping {format_label} page 1 only...")
+response = requests.get(url, headers=headers)
+soup = BeautifulSoup(response.text, "html.parser")
+
+products = soup.select("li.grid__item")
+for product in products:
+    title_tag = product.select_one(".card__heading")
+    price_tag = product.select_one(".price-item--sale") or product.select_one(".price-item--regular")
+    compare_tag = product.select_one(".price-item--regular")
+    if not title_tag or not price_tag:
+        continue
+
+    title = title_tag.text.strip()
+    current_price = re.search(r"\$[\d\.]+", price_tag.text)
+    current_price = current_price.group(0) if current_price else "$0.00"
+
+    original_price = ""
+    if compare_tag:
+        compare = re.search(r"\$[\d\.]+", compare_tag.text)
+        if compare and compare.group(0) != current_price:
+            original_price = compare.group(0)
+
+    try:
+        if original_price:
+            cur = float(current_price.replace("$", ""))
+            orig = float(original_price.replace("$", ""))
+            discount = f"{round((1 - cur / orig) * 100)}% off" if cur < orig else ""
+        else:
+            discount = ""
+    except:
+        discount = ""
+
+    link_tag = product.find("a", href=True)
+    link = "https://moviecodeclub.com" + link_tag["href"] if link_tag else url
+
+    all_deals[format_label].append({
+        "title": title,
+        "price": current_price,
+        "original_price": original_price,
+        "discount": discount,
+        "link": link,
+        "format": format_label,
+        "added": datetime.utcnow().strftime("%Y-%m-%d")
+    })
+
+# Reverse HD too for newest first
 all_deals["HD"].reverse()
 
-# Save files
+# ---------- Write files ----------
 with open("deals_4k.json", "w") as f:
     json.dump(all_deals["4K UHD"], f, indent=2)
 
