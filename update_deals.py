@@ -74,18 +74,26 @@ while True:
 # Reverse to get newest → oldest
 all_deals["4K UHD"].reverse()
 
-# ---------- HD Scraping (Page 1 Only) ----------
+# ---------- HD Scraping (Page 1 Only — Updated Logic) ----------
 format_label = "HD"
 url = "https://moviecodeclub.com/collections/hd-codes-1"
 print(f"Scraping {format_label} page 1 only...")
 response = requests.get(url, headers=headers)
 soup = BeautifulSoup(response.text, "html.parser")
 
-products = soup.select("li.grid__item")
+# New selector
+products = soup.select("div.card-wrapper")
+
+if not products:
+    print("⚠️ No HD products found — structure may have changed.")
+else:
+    print(f"✅ Found {len(products)} HD products.")
+
 for product in products:
     title_tag = product.select_one(".card__heading")
     price_tag = product.select_one(".price-item--sale") or product.select_one(".price-item--regular")
     compare_tag = product.select_one(".price-item--regular")
+
     if not title_tag or not price_tag:
         continue
 
@@ -109,7 +117,7 @@ for product in products:
     except:
         discount = ""
 
-    link_tag = product.find("a", href=True)
+    link_tag = product.find_parent("a", href=True)
     link = "https://moviecodeclub.com" + link_tag["href"] if link_tag else url
 
     all_deals[format_label].append({
