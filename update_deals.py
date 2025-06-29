@@ -29,16 +29,14 @@ for format_label, url in collection_urls.items():
         price_tag = product.select_one(".price-item--sale, .price-item--regular")
         compare_tag = product.select_one(".price-item--regular")
 
-        if not title_tag or not price_tag:
-            continue
-
-        title = title_tag.text.strip()
-        current_price = price_tag.text.strip().replace("\u00a0", " ")
-
-        if compare_tag and compare_tag != price_tag:
-            original_price = compare_tag.text.strip().replace("\u00a0", " ")
-        else:
-            original_price = current_price
+        if compare_tag:
+    raw_compare = compare_tag.text.strip().replace("\u00a0", " ")
+    if raw_compare != current_price:
+        original_price = raw_compare
+    else:
+        original_price = ""
+else:
+    original_price = ""
 
         try:
             cur = float(current_price.replace("$", ""))
